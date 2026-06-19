@@ -1,9 +1,7 @@
 # PCG Alumni Slack Bot
 
 A Slack bot that lets current members ask "who should I talk to about SWE?"
-and get back alumni contacts from your Google Sheet. No AI / Claude API
-needed — it's plain keyword matching against your spreadsheet, so it costs
-nothing to run besides hosting.
+and get back alumni contacts from your Google Sheet. 
 
 ---
 
@@ -60,7 +58,7 @@ changes, no redeploying.
 4. Format: **Comma-separated values (.csv)**
 5. Click **Publish**, copy the URL — this is your `CSV_URL`
 
-⚠️ Important: this makes the sheet readable by anyone with the link (no
+ Important: this makes the sheet readable by anyone with the link (no
 edit access, just read). Don't put anything sensitive beyond what's already
 meant to be shared with members.
 
@@ -80,26 +78,7 @@ meant to be shared with members.
    - `CSV_URL`
 5. Railway auto-detects Node.js and runs `npm start`. Done — the bot is live.
 
-### Option B: Render
 
-1. Go to **https://render.com**, sign up with GitHub
-2. **New → Background Worker** (not Web Service, since this bot uses Socket
-   Mode and doesn't need a public URL)
-3. Connect your repo, set Build Command: `npm install`, Start Command:
-   `npm start`
-4. Add the same 4 environment variables under **Environment**
-5. Deploy.
-
-### Option C: Run locally for testing
-
-```bash
-npm install
-cp .env.example .env
-# fill in .env with your real values
-npm start
-```
-
----
 
 ## Using the bot
 
@@ -125,14 +104,4 @@ If members phrase requests in ways the bot doesn't catch (e.g. "tech" not
 matching SWE), edit the `KEYWORD_MAP` object at the top of `app.js` and add
 more synonyms. No need to touch anything else.
 
----
 
-## Costs
-
-- Slack app: free
-- Google Sheets publish: free
-- Railway/Render free tier: free for low-traffic bots like this (a few
-  hundred queries/month is nothing). If PCG grows huge, Railway's free tier
-  caps out around 500 hours/month — still plenty for one bot.
-- No AI API costs at all — this bot does not call Claude, OpenAI, or any
-  LLM. It's keyword matching.
