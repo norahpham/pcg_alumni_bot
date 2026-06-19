@@ -1,0 +1,16 @@
+{
+  "name": "pcg-alumni-bot",
+  "version": "1.0.0",
+  "description": "Slack bot that lets PCG members query the alumni directory by interest area",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "@slack/bolt": "^3.17.1",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
