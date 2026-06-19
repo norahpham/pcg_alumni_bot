@@ -84,9 +84,11 @@ function parseCSV(text) {
 }
 
 function rowsToObjects(rows) {
-  // Find the header row — the Alumni Directory sheet has a title row and
-  // subtitle row above the real headers, so look for the row containing "Name".
-  const headerIdx = rows.findIndex(r => r.includes('Name'));
+  // Find the header row — case-insensitive match for a "Name" column,
+  // since sheets may use different capitalization (NAME, Name, name).
+  const headerIdx = rows.findIndex(r =>
+    r.some(cell => cell.trim().toLowerCase() === 'name')
+  );
   if (headerIdx === -1) return [];
 
   const headers = rows[headerIdx].map(h => h.trim());
@@ -96,9 +98,19 @@ function rowsToObjects(rows) {
     const r = rows[i];
     const obj = {};
     headers.forEach((h, idx) => { obj[h] = (r[idx] || '').trim(); });
-    if (obj['Name']) records.push(obj);
+    if (obj['Name'] || obj['NAME']) records.push(obj);
   }
   return records;
+}
+
+// Look up a field on a record regardless of header capitalization/spacing.
+// e.g. getField(record, 'company') matches COMPANY, Company, company, etc.
+function getField(record, targetKey) {
+  const target = targetKey.trim().toLowerCase();
+  for (const key of Object.keys(record)) {
+    if (key.trim().toLowerCase() === target) return record[key];
+  }
+  return '';
 }
 
 // ---------- FETCH + REFRESH ----------
@@ -115,20 +127,26 @@ async function refreshAlumni() {
     const records = rowsToObjects(rows);
 
     alumniCache = records
-      .filter(r => r['Company'])
+      .filter(r => getField(r, 'company'))
       .map(r => ({
-        name: r['Name'],
-        gradYear: r['Grad Year'],
-        company: r['Company'],
-        role: r['Role/Title'],
-        focus: r['Focus Area(s)'] || '',
-        contact: r['Preferred Contact'] || 'Email',
-        email: r['Email'],
-        linkedin: r['LinkedIn'],
+        name: getField(r, 'name'),
+        gradYear: getField(r, 'grad year'),
+        company: getField(r, 'company'),
+        role: getField(r, 'role/title'),
+        focus: getField(r, 'focus area(s)'),
+        contact: getField(r, 'preferred contact') || 'Email',
+        email: getField(r, 'email'),
+        linkedin: getField(r, 'linkedin'),
       }));
 
     lastRefreshed = new Date();
     console.log(`[pcg-bot] Refreshed: ${alumniCache.length} alumni loaded.`);
+    if (alumniCache.length === 0 && records.length > 0) {
+      console.warn('[pcg-bot] Found rows but 0 had a Company value. Headers seen:', Object.keys(records[0]));
+    }
+    if (records.length === 0) {
+      console.warn('[pcg-bot] No "Name" header found in CSV. First row was:', rows[0]);
+    }
   } catch (err) {
     console.error('[pcg-bot] Failed to refresh alumni data:', err.message);
   }
@@ -145,20 +163,14 @@ function matchFocusArea(query) {
 
 function queryAlumni(query) {
   const focusArea = matchFocusArea(query);
-  let results;
+  const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
 
-  if (focusArea) {
-    results = alumniCache.filter(a =>
-      a.focus.toLowerCase().includes(focusArea.toLowerCase())
-    );
-  } else {
-    // Fallback: free-text search across name/company/focus
-    const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-    results = alumniCache.filter(a => {
-      const haystack = `${a.name} ${a.company} ${a.focus} ${a.role}`.toLowerCase();
-      return words.some(w => haystack.includes(w));
-    });
-  }
+  const results = alumniCache.filter(a => {
+    const matchesFocus = focusArea && a.focus.toLowerCase().includes(focusArea.toLowerCase());
+    const haystack = `${a.name} ${a.company} ${a.focus} ${a.role}`.toLowerCase();
+    const matchesText = words.some(w => haystack.includes(w));
+    return matchesFocus || matchesText;
+  });
 
   return results.slice(0, 8);
 }
