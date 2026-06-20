@@ -1,6 +1,6 @@
 // PCG Alumni Slack Bot
 // Answers "who should I talk to about X" by matching against a live
-// Google Sheets CSV (your Alumni Directory). No AI/Claude API needed —
+// Google Sheets CSV (your Alumni Directory). No AI/Claude API needed 
 // this is plain keyword matching, so it's free to run forever.
 
 const { App } = require('@slack/bolt');
