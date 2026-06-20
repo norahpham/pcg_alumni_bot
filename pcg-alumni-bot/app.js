@@ -153,10 +153,28 @@ async function refreshAlumni() {
 }
 
 // ---------- QUERY LOGIC ----------
+
+// Simple fuzzy match: returns true if query is "close enough" to keyword.
+// Handles typos like "consutling", "mckinesy", "mediicne" by checking if
+// enough characters from the keyword appear in the query in order.
+function fuzzyMatch(query, keyword) {
+  if (query.includes(keyword)) return true;
+  if (keyword.length < 4) return false;
+  // Check if query contains at least the first 4 chars of the keyword
+  if (query.includes(keyword.slice(0, 4))) return true;
+  // Levenshtein-lite: count matching chars in order
+  let qi = 0;
+  let matched = 0;
+  for (let ki = 0; ki < keyword.length && qi < query.length; ki++) {
+    if (query[qi] === keyword[ki]) { matched++; qi++; }
+  }
+  return matched / keyword.length >= 0.75;
+}
+
 function matchFocusArea(query) {
   const q = query.toLowerCase();
   for (const [focusArea, keywords] of Object.entries(KEYWORD_MAP)) {
-    if (keywords.some(k => q.includes(k))) return focusArea;
+    if (keywords.some(k => fuzzyMatch(q, k))) return focusArea;
   }
   return null;
 }
@@ -168,7 +186,7 @@ function queryAlumni(query) {
   const results = alumniCache.filter(a => {
     const matchesFocus = focusArea && a.focus.toLowerCase().includes(focusArea.toLowerCase());
     const haystack = `${a.name} ${a.company} ${a.focus} ${a.role}`.toLowerCase();
-    const matchesText = words.some(w => haystack.includes(w));
+    const matchesText = words.some(w => haystack.includes(w) || fuzzyMatch(haystack, w));
     return matchesFocus || matchesText;
   });
 
@@ -186,9 +204,33 @@ function formatResults(results, query) {
   let text = `Found *${results.length}* alumni for *"${query}"*:\n\n`;
 
   for (const a of results) {
-    const li = a.linkedin && a.linkedin.startsWith('http') ? ` | <${a.linkedin}|LinkedIn>` : '';
+    const preferEmail = a.contact && a.contact.toLowerCase().includes('email');
+    const preferLinkedIn = a.contact && a.contact.toLowerCase().includes('linkedin');
+
+    // Build a clickable contact link based on preferred reach method
+    let contactLink = '';
+    if (preferLinkedIn && a.linkedin && a.linkedin.startsWith('http')) {
+      contactLink = `<${a.linkedin}|LinkedIn>`;
+    } else if (preferEmail && a.email) {
+      contactLink = `<mailto:${a.email}|${a.email}>`;
+    } else if (a.linkedin && a.linkedin.startsWith('http')) {
+      contactLink = `<${a.linkedin}|LinkedIn>`;
+    } else if (a.email) {
+      contactLink = `<mailto:${a.email}|${a.email}>`;
+    }
+
+    // Always show both links if available
+    const extraLinks = [];
+    if (!preferLinkedIn && a.linkedin && a.linkedin.startsWith('http')) {
+      extraLinks.push(`<${a.linkedin}|LinkedIn>`);
+    }
+    if (!preferEmail && a.email && contactLink !== `<mailto:${a.email}|${a.email}>`) {
+      extraLinks.push(`<mailto:${a.email}|email>`);
+    }
+    const extra = extraLinks.length ? ` · ${extraLinks.join(' · ')}` : '';
+
     text += `*${a.name}* — ${a.role ? a.role + ' @ ' : ''}${a.company}\n`;
-    text += `   _${a.focus}_ · Reach via ${a.contact}${li}\n\n`;
+    text += `   _${a.focus}_ · Best way to reach: ${contactLink || a.contact}${extra}\n\n`;
   }
 
   return text;
