@@ -1,6 +1,6 @@
 // PCG Alumni Slack Bot
 // Answers "who should I talk to about X" by matching against a live
-// Google Sheets CSV (your Alumni Directory). No AI/Claude API needed 
+// Google Sheets CSV (your Alumni Directory). No AI/Claude API needed —
 // this is plain keyword matching, so it's free to run forever.
 
 const { App } = require('@slack/bolt');
@@ -250,6 +250,14 @@ app.command('/alumni', async ({ command, ack, respond }) => {
   const query = command.text.trim();
   if (!query) {
     await respond('Try `/alumni SWE`, `/alumni consulting`, `/alumni medicine`, or a name/company.');
+    return;
+  }
+  // Hidden debug command: /alumni debug
+  if (query === 'debug') {
+    const sample = alumniCache.slice(0, 3).map(a =>
+      `name="${a.name}" company="${a.company}" focus="${a.focus}"`
+    ).join('\n');
+    await respond(`Loaded ${alumniCache.length} alumni. First 3:\n\`\`\`\n${sample}\n\`\`\``);
     return;
   }
   const results = queryAlumni(query);
