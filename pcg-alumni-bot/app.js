@@ -230,7 +230,7 @@ function formatResults(results, query) {
     const extra = extraLinks.length ? ` · ${extraLinks.join(' · ')}` : '';
 
     text += `*${a.name}* — ${a.role ? a.role + ' @ ' : ''}${a.company}\n`;
-    text += `   _${a.focus}_ · Best way to reach: ${contactLink || a.contact}${extra}\n\n`;
+    text += `   ${a.focus ? `${a.focus} · ` : ''}Contact: ${contactLink || a.contact}${extra}\n\n`;
   }
 
   return text;
