@@ -133,7 +133,7 @@ async function refreshAlumni() {
         gradYear: getField(r, 'grad year'),
         company: getField(r, 'company'),
         role: getField(r, 'role/title'),
-        focus: getField(r, 'focus area(s)'),
+        focus: getField(r, 'focus'),
         contact: getField(r, 'preferred contact') || 'Email',
         email: getField(r, 'email'),
         linkedin: getField(r, 'linkedin'),
