@@ -190,7 +190,7 @@ function queryAlumni(query) {
     return matchesFocus || matchesText;
   });
 
-  return results.slice(0, 8);
+  return results;
 }
 
 function formatResults(results, query) {
