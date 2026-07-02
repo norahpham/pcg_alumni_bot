@@ -180,17 +180,30 @@ function matchFocusArea(query) {
 }
 
 function queryAlumni(query) {
+  const q = query.toLowerCase().trim();
+  const words = q.split(/\s+/).filter(w => w.length > 2);
+
+  // Company match: exact substring only (no fuzzy) — "stanford" should only match Stanford, not fuzzily bleed into other results
+  const companyMatches = alumniCache.filter(a =>
+    a.company.toLowerCase().includes(q) ||
+    words.some(w => a.company.toLowerCase().includes(w))
+  );
+  if (companyMatches.length > 0) return companyMatches;
+
+  // Name match: check if query looks like a person's name
+  const nameMatches = alumniCache.filter(a =>
+    a.name.toLowerCase().includes(q) ||
+    words.some(w => a.name.toLowerCase().includes(w))
+  );
+  if (nameMatches.length > 0) return nameMatches;
+
+  // Otherwise match by focus area keyword only
   const focusArea = matchFocusArea(query);
-  const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  if (focusArea) {
+    return alumniCache.filter(a => a.focus.toLowerCase().includes(focusArea.toLowerCase()));
+  }
 
-  const results = alumniCache.filter(a => {
-    const matchesFocus = focusArea && a.focus.toLowerCase().includes(focusArea.toLowerCase());
-    const haystack = `${a.name} ${a.company} ${a.focus} ${a.role}`.toLowerCase();
-    const matchesText = words.some(w => haystack.includes(w) || fuzzyMatch(haystack, w));
-    return matchesFocus || matchesText;
-  });
-
-  return results;
+  return [];
 }
 
 function formatResults(results, query) {
