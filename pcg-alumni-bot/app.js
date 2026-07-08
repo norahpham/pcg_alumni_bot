@@ -121,10 +121,15 @@ async function refreshAlumni() {
   }
   try {
     const res = await fetch(CSV_URL);
+    console.log(`[pcg-bot] HTTP status: ${res.status}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const text = await res.text();
+    console.log(`[pcg-bot] CSV length: ${text.length} chars`);
+    console.log(`[pcg-bot] First 200 chars: ${text.slice(0, 200).replace(/\n/g, '|')}`);
     const rows = parseCSV(text);
+    console.log(`[pcg-bot] Parsed ${rows.length} rows`);
     const records = rowsToObjects(rows);
+    console.log(`[pcg-bot] Found ${records.length} records`);
 
     alumniCache = records
       .filter(r => getField(r, 'company'))
